@@ -7,6 +7,7 @@ const app = express()
 
 const productRouter = require('./router/product')
 const orderRouter = require('./router/order')
+const userRouter = require('./router/user')
 
 require('./config/database')
 
@@ -19,6 +20,7 @@ app.use(morgan("dev"))
 
 app.use('/product', productRouter)
 app.use('/order', orderRouter)
+app.use('/user', userRouter)
 
 const PORT = process.env.PORT
 
