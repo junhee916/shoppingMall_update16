@@ -1,89 +1,19 @@
 const express = require('express')
-const userModel = require('../model/user')
-const bcrypt = require('bcryptjs')
+const {
+    users_get_all,
+    users_signup_user,
+    users_login_user
+} =require('../controller/user')
 const router = express.Router()
 
 // userInfo
-router.get("/", (req, res) => {
-
-    userModel
-        .find()
-        .then(users => {
-            res.json({
-                msg : "get users",
-                count : users.length,
-                userInfo : users.map(user => {
-                    return{
-                        id : user._id,
-                        name : user.name,
-                        email : user.email
-                    }
-                })
-            })
-        })
-        .catch(err => {
-            res.status(500).json({
-                msg : err.message
-            })
-        })
-})
+router.get("/", users_get_all)
 
 // 회원가입
-router.post('/signup', (req, res) => {
-
-    userModel
-        .findOne({email : req.body.userEmail})
-        .then(user => {
-            if(user){
-                return res.json({
-                    msg : "user exited, please other email"
-                })
-            }
-            else{
-                bcrypt.hash(req.body.password, 10, (err, hash) => {
-                    if(err){
-                        return res.status(404).json({
-                            msg : err.message
-                        })
-                    }
-                    const newUser = new userModel({
-                        name : req.body.userName,
-                        email : req.body.userEmail,
-                        password : hash
-                    })
-
-                    newUser
-                        .save()
-                        .then(user => {
-                            res.json({
-                                msg : "register user",
-                                userInfo : {
-                                    id : user._id,
-                                    name : user.name,
-                                    email : user.email
-                                }
-                            })
-                        })
-                        .catch(err => {
-                            res.status(500).json({
-                                msg : err.message
-                            })
-                        })
-                })
-            }
-        })
-        .catch(err => {
-            res.status(500).json({
-                msg : err.message
-            })
-        })
-
-})
+router.post('/signup', users_signup_user)
 
 // 로그인
-router.post("/login", (req, res) => {
-
-})
+router.post("/login", users_login_user)
 
 
 module.exports = router

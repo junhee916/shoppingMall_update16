@@ -1,161 +1,61 @@
 const express = require('express')
-const productModel = require('../model/product')
+const multer = require('multer')
 const router = express.Router()
+const keepAuth = require('../middleware/keep-auth')
+const {
+    products_get_all,
+    products_get_product,
+    products_post_product,
+    products_patch_product,
+    products_delete_all,
+    products_delete_product
+} = require('../controller/product')
+
+const storage = multer.diskStorage(
+    {
+        destination : function (req, file, cb){
+            cb(null, './uploads')
+        },
+        filename : function (req, file, cb){
+            cb(null, file.originalname)
+        }
+    }
+)
+
+const fileFilter = (req, file, cb) => {
+
+    if(file.mimetype === 'image/jpeg' || file.mimetype === 'image/png'){
+        cb(null, true)
+    }
+    else{
+        cb(null, false)
+    }
+}
+
+const upload = multer({
+    storage : storage,
+    limit : {
+        filesize : 1024 * 1024 * 5
+    },
+    fileFilter : fileFilter
+})
 
 // get products
-router.get("/", (req, res) => {
-
-    productModel
-        .find()
-        .then(products => {
-            console.log(products)
-            res.json({
-                msg : "get products",
-                count : products.length,
-                productInfo : products.map(product => {
-                    return{
-                        id : product._id,
-                        name : product.name,
-                        price : product.price,
-                        data : product.createdAt
-                    }
-                })
-            })
-        })
-        .catch(err => {
-            res.status(500).json({
-                msg : err.message
-            })
-        })
-})
+router.get("/", products_get_all)
 
 // detail product
-router.get("/:productId", (req, res) => {
-
-    const id = req.params.productId
-
-    productModel
-        .findById(id)
-        .then(product => {
-            if(!product){
-                return res.status(404).json({
-                    msg : "no product id"
-                })
-            }
-            res.json({
-                msg :"get product",
-                productInfo : {
-                    id : product._id,
-                    name : product.name,
-                    price: product.price,
-                    data : product.createdAt
-                }
-            })
-        })
-        .catch(err => {
-            res.status(500).json({
-                msg : err.message
-            })
-        })
-})
+router.get("/:productId", keepAuth, products_get_product)
 
 // register product
-router.post("/", (req, res) =>{
-
-    const newProduct = new productModel(
-        {
-            name : req.body.productName,
-            price : req.body.productPrice
-        }
-    )
-
-    newProduct
-        .save()
-        .then(product => {
-            res.json({
-                msg : "register product",
-                productInfo : {
-                    id : product._id,
-                    name : product.name,
-                    price : product.price,
-                    data : product.createdAt
-                }
-            })
-        })
-        .catch(err => {
-            res.status(500).json({
-                msg : err.message
-            })
-        })
-})
+router.post("/",keepAuth, upload.single('productImage'), products_post_product)
 
 // update product
-router.patch("/:productId", (req, res) => {
-    const id = req.params.productId
-
-    const updateOps = {}
-
-    for(const ops of req.body){
-        updateOps[ops.propName] = ops.value
-    }
-
-    productModel
-        .findByIdAndUpdate(id, {$set : updateOps})
-        .then((product) => {
-            if(!product){
-                return res.status(404).json({
-                    msg : "nod product id"
-                })
-            }
-            res.json({
-                msg : "update product by " + id
-            })
-        })
-        .catch(err => {
-            res.status(500).json({
-                msg : err.message
-            })
-        })
-})
+router.patch("/:productId",keepAuth, products_patch_product)
 
 // detele products
-router.delete("/", (req, res) => {
-
-    productModel
-        .remove()
-        .then(() => {
-            res.json({
-                msg : "delete products"
-            })
-        })
-        .catch(err => {
-            res.status(500).json({
-                msg : err.message
-            })
-        })
-})
+router.delete("/",keepAuth, products_delete_all)
 
 // detail delete product
-router.delete("/:productId", (req, res) => {
-
-    const id = req.params.productId
-    productModel
-        .findByIdAndRemove(id)
-        .then((product) => {
-            if(!product){
-                return res.status(404).json({
-                    msg : "no product id"
-                })
-            }
-            res.json({
-                msg : "delete product by " + id
-            })
-        })
-        .catch(err => {
-            res.status(500).json({
-                msg : err.message
-            })
-        })
-})
+router.delete("/:productId",keepAuth, products_delete_product)
 
 module.exports = router
